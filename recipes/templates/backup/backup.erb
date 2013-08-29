@@ -1,0 +1,61 @@
+Backup::Model.new('<%= application %>', 'Automatic database backup for application <%= application %>') do
+                                                                                                    
+split_into_chunks_of 250
+
+
+##                                                                                                               
+# PostgreSQL [Database]                                                                                             
+#                                                                                                                
+database PostgreSQL do |db|
+  db.name               = "<%= backup_db_name %>"
+  db.username           = "<%= backup_db_user %>"
+  db.password           = "<%= backup_db_password %>"
+  db.host               = "<%= backup_db_host %>"
+  db.port               = 5432
+  #db.socket             = "/tmp/pg.sock"                                                                        
+  #db.skip_tables        = ['skip', 'these', 'tables']                                                           
+  #db.only_tables        = ['only', 'these' 'tables']                                                            
+  db.additional_options = ['-xc', '-E=utf8']
+end
+
+##                                                                                                                 
+# Gzip [Compressor]                                                                                              
+#                                                                                                                
+compress_with Gzip do |compression|
+  #compression.best = true                                                                                       
+  compression.level = 1
+  #compression.fast = false                                                                                      
+end
+
+store_with S3 do |s3|
+  # Minimum allowed setting is 5.
+  s3.chunk_size = 10 # MiB - data will be sent in 'chunks'
+  s3.keep = <%= max_backups %>
+  # s3.storage_class = :reduced_redundancy
+end
+
+##                                                                                                               
+# Mail [Notifier]                                                                                                
+#                                                                                                                
+# The default delivery method for Mail Notifiers is 'SMTP'.                                                      
+# See the Wiki for other delivery options.                                                                       
+# https://github.com/meskyanichi/backup/wiki/Notifiers                                                           
+#                                                                                                                
+notify_by Mail do |mail|
+  mail.on_success           = true
+  mail.on_warning           = true
+  mail.on_failure           = true
+
+  mail.from                 = '<%= email_from %>'
+  mail.to                   = '<%= admin_email %>'
+  mail.delivery_method      = :smtp
+  mail.encryption           = :starttls
+  mail.address              = 'smtp.gmail.com'                                                                  
+  mail.port                 = 587                                                                               
+  mail.domain               = 'needle.me'                                                                  
+  mail.user_name            = 'info@needle.me'                                                                
+  mail.password             = 'n33dl32012'                                                                     
+  mail.authentication       = 'plain' 
+end
+
+end
